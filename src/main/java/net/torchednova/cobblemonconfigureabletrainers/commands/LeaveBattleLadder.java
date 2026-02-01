@@ -20,7 +20,7 @@ import static com.mojang.text2speech.Narrator.LOGGER;
 public class LeaveBattleLadder {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
     {
-        dispatcher.register(Commands.literal("leaveBattleLadder")
+        dispatcher.register(Commands.literal("leavebattleladder")
                 .executes(context -> {
                     CommandSourceStack source = context.getSource();
 

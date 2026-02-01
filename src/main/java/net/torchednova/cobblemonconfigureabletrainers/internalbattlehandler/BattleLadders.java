@@ -28,6 +28,13 @@ public class BattleLadders {
         }
         return bats.get(index);
     }
+    public boolean delBattle(int id)
+    {
+        if (bats.size() <= id) return false;
+        bats.remove(id);
+        return true;
+    }
+
     public Vec3 getExit() { return bats.getLast(); }
     public Vec3 getStart() { return bats.getFirst();}
     public Vec3 getCur() { return bats.get(index); }

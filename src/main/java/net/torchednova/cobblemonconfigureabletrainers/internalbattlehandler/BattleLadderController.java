@@ -42,6 +42,19 @@ public class BattleLadderController {
         return null;
     }
 
+    public static void delLadder(int id)
+    {
+        for (int i = 0; i < bl.size(); i++)
+        {
+            if (bl.get(i).getId() == id)
+            {
+                bl.remove(i);
+                return;
+            }
+        }
+    }
+
+
     public static boolean playerInLadder(UUID uuid)
     {
         for (int i = 0; i < bl.size(); i++)
