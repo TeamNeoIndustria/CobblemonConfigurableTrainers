@@ -1,42 +1,25 @@
 package net.torchednova.cobblemonconfigureabletrainers;
 
-import com.cobblemon.mod.common.api.battles.model.PokemonBattle;
 import com.cobblemon.mod.common.api.battles.model.actor.BattleActor;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
 import com.cobblemon.mod.common.api.events.battles.BattleVictoryEvent;
-import com.cobblemon.mod.common.battles.actor.PlayerBattleActor;
-import com.cobblemon.mod.common.battles.actor.TrainerBattleActor;
 import com.gitlab.srcmc.rctapi.api.battle.BattleManager;
-import com.google.common.eventbus.Subscribe;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.torchednova.cobblemonconfigureabletrainers.commands.*;
 import net.torchednova.cobblemonconfigureabletrainers.datastorage.TargetDataStorage;
 import net.torchednova.cobblemonconfigureabletrainers.internalbattlehandler.BattleLadderController;
-import net.torchednova.cobblemonconfigureabletrainers.internalbattlehandler.BattleLadders;
 import net.torchednova.cobblemonconfigureabletrainers.internalbattlehandler.Battles;
-import net.torchednova.cobblemonconfigureabletrainers.internalbattlehandler.EastNPCTrainer;
 import net.torchednova.cobblemonconfigureabletrainers.trainer.TrainerHandler;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.food.FoodProperties;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.CreativeModeTabs;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.material.MapColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
@@ -44,19 +27,10 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import net.neoforged.neoforge.registries.DeferredBlock;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredItem;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
+import xyz.neonetwork.neolib.utilities.NeoNotify;
 
 import java.util.Objects;
-import java.util.UUID;
-
-import static com.mojang.blaze3d.Blaze3D.getTime;
-import static net.minecraft.commands.execution.tasks.ContinuationTask.schedule;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(CobblemonConfigureableTrainers.MODID)
@@ -126,24 +100,36 @@ public class CobblemonConfigureableTrainers {
             //LOGGER.info("panick");
             return;
         }
-
-
-
-
         Battles.delBattle(trainerActor.getUuid());
         ServerPlayer sPlayer = (ServerPlayer) player;
         Vec3 nextPos = BattleLadderController.getEndPos(player.getUUID());
+        if (nextPos == null)
+        {
+            return;
+        }
 
         if (playerWin == false)
         {
-            
+            if (nextPos == null) LOGGER.error("Player in a battle ladder but no exit");
             sPlayer.connection.teleport(nextPos.x, nextPos.y, nextPos.z, 0, 0);
+            NeoNotify.sendTitle(sPlayer, Component.literal("You Lost"), Component.literal("Better luck next time"));
+            sPlayer.playSound(SoundEvents.PLAYER_HURT, 10.0f, 1.0f);
             return;
         }
         nextPos = BattleLadderController.getNextPos(player.getUUID());
         if (nextPos == null)
         {
             return;
+        }
+        if (nextPos == BattleLadderController.getEndPos(player.getUUID()))
+        {
+            NeoNotify.sendTitle(sPlayer, Component.literal("You Won!"), Component.literal("Congratulations!"));
+            sPlayer.playSound(SoundEvents.PLAYER_LEVELUP, 10.0f, 1.0f);
+        }
+        else
+        {
+            NeoNotify.sendTitle(sPlayer, Component.literal("Next Level"), null);
+            sPlayer.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 10.0f, 1.0f);
         }
 
         sPlayer.connection.teleport(nextPos.x, nextPos.y, nextPos.z, 0, 0);
@@ -173,15 +159,12 @@ public class CobblemonConfigureableTrainers {
 
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
-        EastNPCTrainer.init(event.getServer());
-
     }
 
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event)
     {
         TargetDataStorage.save(event.getServer());
-        TargetDataStorage.saveTrainers(event.getServer());
     }
 
 
